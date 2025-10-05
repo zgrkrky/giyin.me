@@ -3,29 +3,35 @@ const express = require('express');
 const cors = require('cors');
 const { Storage } = require('@google-cloud/storage');
 const multer = require('multer');
+const fs = require('fs');           // <-- ekle
+const path = require('path');       // <-- ekle
 
-// ---------- AYARLAR (YENİ PROJE BİLGİLERİYLE GÜNCELLENDİ) ----------
-// Google Cloud Storage'a erişim için hizmet hesabı anahtarını doğrudan okuyoruz.
-// ÖNEMLİ: Bu anahtarın YENİ 'fit-check' projesinden gelmesi gerekiyor.
-const storage = new Storage({
-  keyFilename: 'service-account-key.json',
-  projectId: 'fit-check-473208', // YENİ Proje ID'si
-});
 
-// Dosyaların yükleneceği YENİ bucket'ın adı
-const bucketName = 'fit-check-bucket-user-uploads'; // YENİ Bucket Adı
+// ---------- AYARLAR ----------
+const keyFromEnv = process.env.GCP_SA_KEY_BASE64 || null;
+const projectId  = process.env.GOOGLE_CLOUD_PROJECT || 'fit-check-473208';
+const bucketName = process.env.BUCKET_NAME || 'fit-check-bucket-user-uploads';
+
+// (Render gibi ortamlarda dosya yoksa, base64’ü geçici dosyaya yaz)
+let storageOptions = { projectId };
+if (keyFromEnv) {
+  const keyPath = '/tmp/gcs-sa.json';
+  fs.writeFileSync(keyPath, Buffer.from(keyFromEnv, 'base64'));
+  storageOptions.keyFilename = keyPath;
+}
+
+const storage = new Storage(storageOptions);
 const bucket = storage.bucket(bucketName);
 
-// Sunucunun çalışacağı port
-const PORT = 3001;
+// Render kendi PORT’unu verir
+const PORT = process.env.PORT || 3001;
 // ---------------------------
 
-const app = express();
 
-// Frontend'den (localhost:5173 gibi) gelen isteklere izin vermek için CORS'u aktif ediyoruz
-app.use(cors());
-// JSON gövdeyi almak için (base64 image alacağız)
-app.use(express.json({ limit: '25mb' }));
+const allowedOrigin = process.env.ALLOWED_ORIGIN || 'http://localhost:5173';
+app.use(cors({ origin: allowedOrigin }));
+app.use(express.json({ limit: '25mb' })); // base64 görseller için
+
 
 // Multer'ı, dosyaları disk yerine doğrudan hafızada (memory) tutacak şekilde ayarlıyoruz
 const upload = multer({
