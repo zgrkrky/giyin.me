@@ -145,20 +145,19 @@ export const generateVirtualTryOnImage = async (modelImageUrl: string, garmentIm
 
 const garmentImagePart = await fileToPart(garmentImage);
 
-    const prompt = `You are an expert virtual try-on AI. You will be given a 'model image' and a 'garment image'. Your task is to create a new photorealistic image where the person from the 'model image' is wearing the clothing from the 'garment image, maintain the person's face and Enhance the visual appeal by subtly adjusting the model’s posture, expression, and body language to convey a more confident and fashion-forward presence — without altering the model’s identity.'.
-Input:
-- Image 1: A photo of a person (the model).
-- Image 2: A photo of a garment (the product).
+    const prompt = `You are an expert virtual try-on AI. Your task is to realistically dress a person (Image 1) with a new garment (Image 2).
 
-TASK:
-Create a new photorealistic image where the person from Image 1 is wearing the garment from Image 2.
-
-Strict Rules:
-- Preserve the person unchanged: The person's face, hair, skin tone, body shape, and pose from Image 1 MUST remain unchanged.
-- Preserve the background: The entire background from Image 1 MUST be preserved perfectly.
-- Complete Garment Replacement: You MUST completely REMOVE and REPLACE the clothing item worn by the person in the 'model image' with the new garment. No part of the original clothing should be visible in the final image.
-- Realistic Application: The garment must be realistically adapted to the person's pose, with natural folds, shadows, and lighting consistent with the original scene.
-- Output Format: Your output MUST be ONLY the final, edited image. Do not include any text, descriptions, or explanations.`;
+**Crucial Rules:**
+1.  **Identify Garment Type:** First, analyze the garment in Image 2. Is it a top (shirt, blouse), a bottom (pants, skirt), or a full-body item (dress, jumpsuit)?
+2.  **Complete Garment Replacement:**
+    * If the new garment is a **full-body item (like a dress)**, you MUST completely REMOVE and REPLACE **ALL** existing clothing on the person (both top and bottom).
+    * If the new garment is a **top**, only replace the upper body clothing.
+    * If the new garment is a **bottom**, only replace the lower body clothing.
+    No part of the original, replaced clothing should be visible.
+3.  **Preserve the Person:** The person's face, hair, skin tone, body shape, and pose from Image 1 MUST remain unchanged.
+4.  **Preserve the Background:** The entire background from Image 1 MUST be preserved perfectly.
+5.  **Realistic Application:** The garment must be realistically adapted to the person's pose, with natural folds, shadows, and lighting consistent with the original scene.
+6.  **Output Format:** Your output MUST be ONLY the final, edited image. Do not include any text, descriptions, or explanations.`;
     const response = await ai.models.generateContent({
         model,
         contents: { parts: [modelImagePart, garmentImagePart, { text: prompt }] },
