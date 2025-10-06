@@ -35,17 +35,26 @@ const dataUrlToPart = (dataUrl: string) => {
     const { mimeType, data } = dataUrlToParts(dataUrl);
     return { inlineData: { mimeType, data } };
 }
-// HTTP(S) bir görseli indirip Gemini'ya inlineData olarak veren helper (PROXY ile)
+// HTTP(S) bir görseli indir → backend proxy üzerinden al → data URL'e çevir → inlineData döndür
 async function httpUrlToPart(url: string) {
-  // Proxy üzerinden çek → CORS yok
+  // CORS'a takılmamak için backend proxy'yi kullanıyoruz
   const res = await fetch(`${API_BASE}/proxy-download?url=${encodeURIComponent(url)}&filename=source.png`);
   if (!res.ok) throw new Error(`Image proxy fetch failed: ${res.status}`);
+
   const blob = await res.blob();
-  const buf = await blob.arrayBuffer();
-  const base64 = btoa(String.fromCharCode(...new Uint8Array(buf)));
-  const mime = blob.type || 'image/png';
-  return { inlineData: { data: base64, mimeType: mime } };
+
+  // FileReader ile güvenli data URL üret (stack overflow yok)
+  const dataUrl: string = await new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(String(r.result));
+    r.onerror = reject;
+    r.readAsDataURL(blob);
+  });
+
+  const { mimeType, data } = dataUrlToParts(dataUrl);
+  return { inlineData: { mimeType, data } };
 }
+
 
 
 const handleApiResponse = (response: GenerateContentResponse): string => {
