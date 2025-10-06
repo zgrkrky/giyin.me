@@ -126,7 +126,7 @@ const safetySettings: SafetySetting[] = [
 
 export const generateModelImage = async (userImage: File): Promise<string> => {
     const userImagePart = await fileToPart(userImage);
-    const prompt = "You are an expert fashion photographer AI. Keep and maintain the person’s exact face, expression and body proportions from the original image. Do not beautify, slim, or reshape any part of the face or body. Maintain the same weight and physical proportions. Place the model against a clean, neutral studio backdrop (light gray, #f0f0f0) with soft, even lighting. Adjust the posture into a natural full-body relaxed, confident and fashion-oriented. Keep all current clothing, making them appear well-lit and professional. The final image must look real, elegant, and high-quality for fashion retail use.";
+    const prompt = "You are an expert fashion photographer AI. Maintain the person’s exact face, expression and body proportions from the original image. Do not reshape any part of the face or body. Remove phone. Place the model into a clean, neutral studio backdrop (light gray, #f0f0f0) with soft lighting. Adjust the posture into a natural full-body relaxed, confident and fashion-oriented. The final image must look real, elegant, and high-quality for fashion retail use.";
 const response = await ai.models.generateContent({
     model,
     contents: { parts: [userImagePart, { text: prompt }] },
@@ -148,7 +148,7 @@ const garmentImagePart = await fileToPart(garmentImage);
     const prompt = `You are an expert virtual try-on AI. Your task is to realistically dress a person (Image 1) with a new garment (Image 2).
 
 **Crucial Rules:**
-1. SOURCE OF TRUTH: The person in Image 1 must remain exactly the same (identity, face, expression, hair, skin tone, body shape, and pose).
+1. The person in Image 1 must remain exactly the same (identity, face, expression, hair, skin tone, body shape, and pose).
 2. If Image 2 contains a person or body DO NOT use person/body/skin, isolate ONLY the garment.
 3. Identify Garment Type: First, analyze the garment in Image 2. Is it a top (shirt, blouse), a bottom (pants, skirt), or a full-body item (dress, jumpsuit)?
 4. Complete Garment Replacement:
