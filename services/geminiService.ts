@@ -126,7 +126,7 @@ const safetySettings: SafetySetting[] = [
 
 export const generateModelImage = async (userImage: File): Promise<string> => {
     const userImagePart = await fileToPart(userImage);
-    const prompt = "You are an expert fashion photographer AI. Keep and maintain the person’s exact face, expression, and body proportions from the original image. Do not beautify, slim, or reshape any part of the face or body. Maintain the same weight and physical proportions. Only reframe the body into a standing full-body shot studio posture. Transform this image into a full-body, photorealistic fashion model shot suitable for a premium e-commerce website. Place the model against a clean, neutral studio backdrop (light gray, #f0f0f0) with soft, even lighting. Do not idealize or alter the figure. Adjust the posture slightly into a natural full-body stance — relaxed, confident, and fashion-oriented. Keep all current clothing and accessories, making them appear well-lit and professional. The final image must look real, elegant, and high-quality for fashion retail use.";
+    const prompt = "You are an expert fashion photographer AI. Keep and maintain the person’s exact face, expression and body proportions from the original image. Do not beautify, slim, or reshape any part of the face or body. Maintain the same weight and physical proportions. Place the model against a clean, neutral studio backdrop (light gray, #f0f0f0) with soft, even lighting. Adjust the posture into a natural full-body relaxed, confident and fashion-oriented. Keep all current clothing, making them appear well-lit and professional. The final image must look real, elegant, and high-quality for fashion retail use.";
 const response = await ai.models.generateContent({
     model,
     contents: { parts: [userImagePart, { text: prompt }] },
@@ -149,17 +149,17 @@ const garmentImagePart = await fileToPart(garmentImage);
 
 **Crucial Rules:**
 1. SOURCE OF TRUTH: The person in Image 1 must remain exactly the same (identity, face, expression, hair, skin tone, body shape, and pose).
-2. DO NOT use any person/body/skin from Image 2. If Image 2 contains a person or mannequin, IGNORE them and isolate ONLY the garment.
-3. **Identify Garment Type:** First, analyze the garment in Image 2. Is it a top (shirt, blouse), a bottom (pants, skirt), or a full-body item (dress, jumpsuit)?
-4. **Complete Garment Replacement:**
-    * If the new garment is a **full-body item (like a dress)**, you MUST completely REMOVE and REPLACE **ALL** existing clothing on the person (both top and bottom). Do not keep pants etc. from Image 1.
-    * If the new garment is a **top**, only replace the upper body clothing.
-    * If the new garment is a **bottom**, only replace the lower body clothing.
-    No part of the original, replaced clothing should be visible.
-5. **Preserve the Person:** The person's face, hair, skin tone, body shape, and pose from Image 1 MUST remain unchanged.
-6. **Preserve the Background:** The entire background from Image 1 MUST be preserved perfectly.
-7. **Realistic Application:** The garment must be realistically adapted to the person's pose, with natural folds, shadows, and lighting consistent with the original scene.
-8. **Output Format:** Your output MUST be ONLY the final, edited image. Do not include any text, descriptions, or explanations.`;
+2. If Image 2 contains a person or body DO NOT use person/body/skin, isolate ONLY the garment.
+3. Identify Garment Type: First, analyze the garment in Image 2. Is it a top (shirt, blouse), a bottom (pants, skirt), or a full-body item (dress, jumpsuit)?
+4. Complete Garment Replacement:
+    - If the Image 2 garment is a full-body item (like a dress), you MUST completely REMOVE and REPLACE ALL existing clothing on the person (both top and bottom). Do not keep pants etc. from Image 1.
+    - If the Image 2 garment is a top, only replace the upper body clothing.
+    - If the Image 2 garment is a bottom, only replace the lower body clothing.
+5. No part of the original clothing should be visible.
+6. Preserve the Person: The person's face, hair, skin tone, body shape, and pose from Image 1 MUST remain unchanged.
+7. Preserve the Background: The entire background from Image 1 MUST be preserved perfectly.
+8. Realistic Application: The garment must be realistically adapted to the person's pose, with natural folds, shadows, and lighting consistent with the original scene.
+9. Output Format: Your output MUST be ONLY the final, edited image. Do not include any text, descriptions, or explanations.`;
     const response = await ai.models.generateContent({
         model,
         contents: { parts: [modelImagePart, garmentImagePart, { text: prompt }] },
