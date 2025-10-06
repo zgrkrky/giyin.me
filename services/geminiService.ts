@@ -35,6 +35,18 @@ const dataUrlToPart = (dataUrl: string) => {
     const { mimeType, data } = dataUrlToParts(dataUrl);
     return { inlineData: { mimeType, data } };
 }
+// HTTP(S) bir görseli indirip Gemini'ya inlineData olarak veren helper (PROXY ile)
+async function httpUrlToPart(url: string) {
+  // Proxy üzerinden çek → CORS yok
+  const res = await fetch(`${API_BASE}/proxy-download?url=${encodeURIComponent(url)}&filename=source.png`);
+  if (!res.ok) throw new Error(`Image proxy fetch failed: ${res.status}`);
+  const blob = await res.blob();
+  const buf = await blob.arrayBuffer();
+  const base64 = btoa(String.fromCharCode(...new Uint8Array(buf)));
+  const mime = blob.type || 'image/png';
+  return { inlineData: { data: base64, mimeType: mime } };
+}
+
 
 const handleApiResponse = (response: GenerateContentResponse): string => {
     if (response.promptFeedback?.blockReason) {
@@ -89,8 +101,12 @@ const response = await ai.models.generateContent({
 
 
 export const generateVirtualTryOnImage = async (modelImageUrl: string, garmentImage: File): Promise<string> => {
-    const modelImagePart = dataUrlToPart(modelImageUrl);
-    const garmentImagePart = await fileToPart(garmentImage);
+    const modelImagePart = modelImageUrl.startsWith('data:')
+  ? dataUrlToPart(modelImageUrl)
+  : await httpUrlToPart(modelImageUrl);
+
+const garmentImagePart = await fileToPart(garmentImage);
+
     const prompt = `You are an expert virtual try-on AI. You will be given a 'model image' and a 'garment image'. Your task is to create a new photorealistic image where the person from the 'model image' is wearing the clothing from the 'garment image, maintain the person's face and Enhance the visual appeal by subtly adjusting the model’s posture, expression, and body language to convey a more confident, sensual, and fashion-forward presence — without altering the model’s identity.'.
 **Input:**
 - Image 1: A photo of a person (the model).
@@ -116,7 +132,10 @@ Create a new photorealistic image where the person from Image 1 is wearing the g
 };
 
 export const generatePoseVariation = async (tryOnImageUrl: string, poseInstruction: string): Promise<string> => {
-    const tryOnImagePart = dataUrlToPart(tryOnImageUrl);
+    const tryOnImagePart = tryOnImageUrl.startsWith('data:')
+  ? dataUrlToPart(tryOnImageUrl)
+  : await httpUrlToPart(tryOnImageUrl);
+
     const prompt = `You are an expert fashion photographer AI. Take this image and regenerate it from a different perspective. The person, clothing, and background style must remain identical. The new perspective should be: "${poseInstruction}". Return ONLY the final image.`;
     const response = await ai.models.generateContent({
         model,
@@ -131,12 +150,10 @@ export const generatePoseVariation = async (tryOnImageUrl: string, poseInstructi
 
 export const uploadOriginalImage = async (file: File) => {
   const formData = new FormData();
-  formData.append('user_image', file); // Sunucunun beklediği anahtar 'user_image'
+  formData.append('user_image', file);
+
   try {
-    const backendUrl = 'http://localhost:3001'; // Lokal Node.js sunucumuzun adresi
-    
-    // YOLU '/upload' OLARAK DÜZELTİYORUZ
-    const response = await fetch(`${backendUrl}/upload`, {
+    const response = await fetch(`${API_BASE}/upload`, {
       method: 'POST',
       body: formData,
     });
@@ -150,13 +167,14 @@ export const uploadOriginalImage = async (file: File) => {
     console.error('Orijinal resim yüklenirken bir hata oluştu:', error);
   }
 };
+
 export const uploadGarment = async (file: File): Promise<string> => {
   console.log('[geminiService] uploadGarment called:', file.name);
 
   const formData = new FormData();
   formData.append('garment_image', file);
 
-  const response = await fetch(`http://localhost:3001/upload-garment`, {
+  const response = await fetch(`${API_BASE}/upload-garment`, {
     method: 'POST',
     body: formData,
   });
@@ -168,10 +186,11 @@ export const uploadGarment = async (file: File): Promise<string> => {
 
   const result = await response.json();
   if (!result?.url) throw new Error('Sunucu URL döndürmedi.');
-  return result.url;
+  return result.url; // signed URL
 };
+
 export const uploadGeneratedImage = async (imageBase64: string): Promise<string> => {
-  const response = await fetch('http://localhost:3001/upload-generated', {
+  const response = await fetch(`${API_BASE}/upload-generated`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ imageData: imageBase64 }),
@@ -184,6 +203,7 @@ export const uploadGeneratedImage = async (imageBase64: string): Promise<string>
 
   const result = await response.json();
   console.log('[uploadGeneratedImage] Uploaded URL:', result.url);
-  return result.url;
+  return result.url; // signed URL
 };
+
 
