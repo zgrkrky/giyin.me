@@ -10,6 +10,8 @@ export interface WardrobeItem {
 }
 
 export interface OutfitLayer {
-  garment: WardrobeItem | null; // null represents the base model layer
-  poseImages: Record<string, string>; // Maps pose instruction to image URL
+  garment: WardrobeItem | null;
+  poseImages: Record<string, string>;     // gösterim (signed URL)
+  poseSources?: Record<string, string>;   // AI için kaynak (data URL)
 }
+

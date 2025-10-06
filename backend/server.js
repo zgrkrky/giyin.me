@@ -38,7 +38,7 @@ const allowed = (process.env.ALLOWED_ORIGIN || '')
 // Ör: "https://giyin-me.onrender.com, http://localhost:5173"
 // CORS
 app.use(cors({
-  origin: allowed.length ? allowed : true,
+  origin: ['https://giyin-me.onrender.com', 'http://localhost:5173'],
   credentials: true,
 }));
 

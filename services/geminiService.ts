@@ -5,12 +5,12 @@
 
 import { GoogleGenAI, GenerateContentResponse, Modality, SafetySetting, HarmCategory, HarmBlockThreshold } from "@google/genai";
 
-// Backend adresi: .env'de VITE_API_BASE_URL varsa onu kullan, yoksa localhost:3001
-const BASE_URL =
-  (import.meta as any).env?.VITE_API_BASE_URL ||
-  (typeof window !== 'undefined'
-    ? `${window.location.protocol}//localhost:3001`
-    : 'http://localhost:3001');
+// Backend base URL (Render'da env'den gelir, localde 3001'e düşer)
+const API_BASE =
+  (import.meta as any).env?.VITE_API_URL ||
+  (import.meta as any).env?.VITE_API_BASE_URL || // eski isimle set ettiyseniz yedek
+  'http://localhost:3001';
+
 
 const fileToPart = async (file: File) => {
     const dataUrl = await new Promise<string>((resolve, reject) => {
