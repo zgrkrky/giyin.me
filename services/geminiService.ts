@@ -126,7 +126,7 @@ const safetySettings: SafetySetting[] = [
 
 export const generateModelImage = async (userImage: File): Promise<string> => {
     const userImagePart = await fileToPart(userImage);
-    const prompt = "You are an expert fashion photographer AI. Maintain the person’s exact face, expression and body proportions from the original image. Do not reshape any part of the face or body. Remove phone. Place the model into a clean, neutral studio backdrop (light gray, #f0f0f0) with soft lighting. Adjust the posture into a natural full-body relaxed, confident and fashion-oriented. The final image must look real, elegant, and high-quality for fashion retail use.";
+    const prompt = "You are an expert fashion photographer AI. Maintain the person’s exact face, expression and body proportions from the original image. Do not reshape any part of the face or body. Place the model into a clean, neutral studio backdrop (light gray, #f0f0f0) with soft lighting. Remove any handheld or background objects such as phones, bags. Keep the person’s face, expression, body shape, and clothing only.  Adjust the posture into a natural full-body relaxed, confident and fashion-oriented. The final image must look real, elegant, and high-quality for fashion retail use.";
 const response = await ai.models.generateContent({
     model,
     contents: { parts: [userImagePart, { text: prompt }] },
