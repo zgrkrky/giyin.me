@@ -3,8 +3,8 @@ const express = require('express');
 const cors = require('cors');
 const { Storage } = require('@google-cloud/storage');
 const multer = require('multer');
-const fs = require('fs');           // <-- ekle
-const path = require('path');       // <-- ekle
+
+
 
 
 // ---------- AYARLAR ----------
@@ -16,38 +16,44 @@ if (!RAW_SA_B64) {
 const saJson = JSON.parse(Buffer.from(RAW_SA_B64, 'base64').toString('utf8'));
 
 const storage = new Storage({
-  projectId: process.env.GOOGLE_CLOUD_PROJECT,      // örn: fit-check-473208
+  projectId: process.env.GOOGLE_CLOUD_PROJECT,
   credentials: {
     client_email: saJson.client_email,
     private_key: saJson.private_key,
   },
 });
-
-const bucketName = process.env.BUCKET_NAME;         // örn: fit-check-bucket-user-uploads
+const bucketName = process.env.BUCKET_NAME;
 const bucket = storage.bucket(bucketName);
-
-// Render kendi PORT’unu atar
 const PORT = process.env.PORT || 3001;
+const app = express();
 // --------------------------------
 
 
 
-const allowed = (process.env.ALLOWED_ORIGIN || '').split(',').map(s => s.trim()).filter(Boolean);
+// --- Middleware ---
+const allowed = (process.env.ALLOWED_ORIGIN || '')
+  .split(',')
+  .map(s => s.trim())
+  .filter(Boolean);
 // Ör: "https://giyin-me.onrender.com, http://localhost:5173"
+// CORS
 app.use(cors({
   origin: allowed.length ? allowed : true,
+  credentials: true,
 }));
+
+// JSON bodies (generated image upload vs.)
 app.use(express.json({ limit: '25mb' }));
 
 
-
-// Multer'ı, dosyaları disk yerine doğrudan hafızada (memory) tutacak şekilde ayarlıyoruz
+// Multer (memory)
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: {
-    fileSize: 10 * 1024 * 1024, // 10 MB dosya limiti
-  },
+  limits: { fileSize: 15 * 1024 * 1024 },
 });
+// --- Health & root (opsiyonel ama faydalı) ---
+app.get('/', (_req, res) => res.send('Backend OK'));
+app.get('/health', (_req, res) => res.status(200).send('ok'));
 
 /**
  * /upload rotası:
