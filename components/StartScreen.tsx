@@ -107,8 +107,8 @@ const StartScreen: React.FC<StartScreenProps> = ({ onModelFinalized }) => {
           </div>
           <div className="w-full lg:w-1/2 flex flex-col items-center justify-center">
             <Compare
-              firstImage="https://storage.googleapis.com/reai_studio/Square_1.png"
-              secondImage="https://storage.googleapis.com/reai_studio/square_3.png"
+              firstImage="https://storage.googleapis.com/reai_studio/Input.png"
+              secondImage="https://storage.googleapis.com/reai_studio/Output.png"
               slideMode="drag"
               className="w-full max-w-sm aspect-[2/3] rounded-2xl bg-gray-200"
             />
