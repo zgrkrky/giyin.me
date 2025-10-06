@@ -6,12 +6,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const REMIX_SUGGESTIONS = [
-  "💭: Paylaşılabilir bir lookbook oluştur",
-  "🤔: Benzer ürünleri bul",
-  "👜: Şapka, güneş gözlüğü veya çanta gibi aksesuarlar ekle",
-  "💯: Kıyafetlere bir “stil puanı” ver",
-  "💁🏼: Favori kombinlerini kaydet",
-  "👗: Kıyafetlerin farklı renk versiyonlarını üret",
+  "💭: Geliştirme devam ediyor",
 ];
 
 interface FooterProps {
