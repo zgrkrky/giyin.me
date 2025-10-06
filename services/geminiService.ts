@@ -86,6 +86,35 @@ const handleApiResponse = (response: GenerateContentResponse): string => {
 const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_API_KEY as string });
 const model = 'gemini-2.5-flash-image-preview';
 
+// --- Fallback'li güvenli istek helper'ı ---
+async function generateWithFallback(
+  parts: any[],
+  primaryPrompt: string,
+  fallbackPrompt: string
+): Promise<string> {
+  try {
+    const res1 = await ai.models.generateContent({
+      model,
+      contents: { parts: [...parts, { text: primaryPrompt }] },
+      config: {
+        responseModalities: [Modality.IMAGE, Modality.TEXT],
+      },
+    });
+    return handleApiResponse(res1);
+  } catch (e: any) {
+    console.warn('[try-on primary failed] retrying with safer prompt:', e?.message || e);
+    const res2 = await ai.models.generateContent({
+      model,
+      contents: { parts: [...parts, { text: fallbackPrompt }] },
+      config: {
+        responseModalities: [Modality.IMAGE, Modality.TEXT],
+      },
+    });
+    return handleApiResponse(res2);
+  }
+}
+
+
 // --- GÜVENLİK AYARLARI ---
 const safetySettings: SafetySetting[] = [
   { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
@@ -97,7 +126,7 @@ const safetySettings: SafetySetting[] = [
 
 export const generateModelImage = async (userImage: File): Promise<string> => {
     const userImagePart = await fileToPart(userImage);
-    const prompt = "You are an expert fashion photographer AI. Keep the person’s exact face, expression, and body proportions from the original image. Keep the exact same facial structure, expression, and proportions. Do not beautify, slim, or reshape any part of the face or body. Maintain the same weight and physical proportions. Only reframe the body into a standing full-length studio posture. Transform this image into a full-body, photorealistic fashion model shot suitable for a premium e-commerce website. Place the model against a clean, neutral studio backdrop (light gray, #f0f0f0) with soft, even lighting. Retain the original facial features, hairstyle, skin tone, and body shape precisely. Do not idealize or alter the figure. Adjust the posture only slightly into a natural full-body stance — relaxed, confident, and fashion-oriented. Keep all current clothing and accessories, making them appear well-lit and professional. The final image must look real, elegant, and high-quality for fashion retail use.";
+    const prompt = "You are an expert fashion photographer AI. Keep and maintain the person’s exact face, expression, and body proportions from the original image. Do not beautify, slim, or reshape any part of the face or body. Maintain the same weight and physical proportions. Only reframe the body into a standing full-body shot studio posture. Transform this image into a full-body, photorealistic fashion model shot suitable for a premium e-commerce website. Place the model against a clean, neutral studio backdrop (light gray, #f0f0f0) with soft, even lighting. Do not idealize or alter the figure. Adjust the posture slightly into a natural full-body stance — relaxed, confident, and fashion-oriented. Keep all current clothing and accessories, making them appear well-lit and professional. The final image must look real, elegant, and high-quality for fashion retail use.";
 const response = await ai.models.generateContent({
     model,
     contents: { parts: [userImagePart, { text: prompt }] },
@@ -116,20 +145,20 @@ export const generateVirtualTryOnImage = async (modelImageUrl: string, garmentIm
 
 const garmentImagePart = await fileToPart(garmentImage);
 
-    const prompt = `You are an expert virtual try-on AI. You will be given a 'model image' and a 'garment image'. Your task is to create a new photorealistic image where the person from the 'model image' is wearing the clothing from the 'garment image, maintain the person's face and Enhance the visual appeal by subtly adjusting the model’s posture, expression, and body language to convey a more confident, sensual, and fashion-forward presence — without altering the model’s identity.'.
-**Input:**
+    const prompt = `You are an expert virtual try-on AI. You will be given a 'model image' and a 'garment image'. Your task is to create a new photorealistic image where the person from the 'model image' is wearing the clothing from the 'garment image, maintain the person's face and Enhance the visual appeal by subtly adjusting the model’s posture, expression, and body language to convey a more confident and fashion-forward presence — without altering the model’s identity.'.
+Input:
 - Image 1: A photo of a person (the model).
 - Image 2: A photo of a garment (the product).
 
-**TASK:**
+TASK:
 Create a new photorealistic image where the person from Image 1 is wearing the garment from Image 2.
 
-**Crucial Rules:**
-1.  **PRESERVE THE PERSON:** The person's face, hair, skin tone, body shape, and pose from Image 1 MUST remain unchanged.
-2.  **PRESERVE THE BACKGROUND:** The entire background from Image 1 MUST be preserved perfectly.
-3.  **Complete Garment Replacement:** You MUST completely REMOVE and REPLACE the clothing item worn by the person in the 'model image' with the new garment. No part of the original clothing (e.g., collars, sleeves, patterns) should be visible in the final image.
-4.  **REALISTIC APPLICATION:** The garment must be realistically adapted to the person's pose, with natural folds, shadows, and lighting consistent with the original scene.
-5.  **OUTPUT FORMAT:** Your output MUST be ONLY the final, edited image. Do not include any text, descriptions, or explanations.`;
+Strict Rules:
+- Preserve the person unchanged: The person's face, hair, skin tone, body shape, and pose from Image 1 MUST remain unchanged.
+- Preserve the background: The entire background from Image 1 MUST be preserved perfectly.
+- Complete Garment Replacement: You MUST completely REMOVE and REPLACE the clothing item worn by the person in the 'model image' with the new garment. No part of the original clothing should be visible in the final image.
+- Realistic Application: The garment must be realistically adapted to the person's pose, with natural folds, shadows, and lighting consistent with the original scene.
+- Output Format: Your output MUST be ONLY the final, edited image. Do not include any text, descriptions, or explanations.`;
     const response = await ai.models.generateContent({
         model,
         contents: { parts: [modelImagePart, garmentImagePart, { text: prompt }] },
