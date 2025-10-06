@@ -8,29 +8,37 @@ const path = require('path');       // <-- ekle
 
 
 // ---------- AYARLAR ----------
-const keyFromEnv = process.env.GCP_SA_KEY_BASE64 || null;
-const projectId  = process.env.GOOGLE_CLOUD_PROJECT || 'fit-check-473208';
-const bucketName = process.env.BUCKET_NAME || 'fit-check-bucket-user-uploads';
-
-// (Render gibi ortamlarda dosya yoksa, base64’ü geçici dosyaya yaz)
-let storageOptions = { projectId };
-if (keyFromEnv) {
-  const keyPath = '/tmp/gcs-sa.json';
-  fs.writeFileSync(keyPath, Buffer.from(keyFromEnv, 'base64'));
-  storageOptions.keyFilename = keyPath;
+const RAW_SA_B64 = process.env.GCP_SA_KEY_BASE64;
+if (!RAW_SA_B64) {
+  console.error('Missing env GCP_SA_KEY_BASE64');
+  process.exit(1);
 }
+const saJson = JSON.parse(Buffer.from(RAW_SA_B64, 'base64').toString('utf8'));
 
-const storage = new Storage(storageOptions);
+const storage = new Storage({
+  projectId: process.env.GOOGLE_CLOUD_PROJECT,      // örn: fit-check-473208
+  credentials: {
+    client_email: saJson.client_email,
+    private_key: saJson.private_key,
+  },
+});
+
+const bucketName = process.env.BUCKET_NAME;         // örn: fit-check-bucket-user-uploads
 const bucket = storage.bucket(bucketName);
 
-// Render kendi PORT’unu verir
+// Render kendi PORT’unu atar
 const PORT = process.env.PORT || 3001;
-// ---------------------------
+// --------------------------------
 
 
-const allowedOrigin = process.env.ALLOWED_ORIGIN || 'http://localhost:5173';
-app.use(cors({ origin: allowedOrigin }));
-app.use(express.json({ limit: '25mb' })); // base64 görseller için
+
+const allowed = (process.env.ALLOWED_ORIGIN || '').split(',').map(s => s.trim()).filter(Boolean);
+// Ör: "https://giyin-me.onrender.com, http://localhost:5173"
+app.use(cors({
+  origin: allowed.length ? allowed : true,
+}));
+app.use(express.json({ limit: '25mb' }));
+
 
 
 // Multer'ı, dosyaları disk yerine doğrudan hafızada (memory) tutacak şekilde ayarlıyoruz
