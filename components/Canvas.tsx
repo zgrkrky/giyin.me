@@ -71,24 +71,13 @@ const Canvas: React.FC<CanvasProps> = ({ displayImageUrl, onStartOver, isLoading
     }
   };
   
-  const handleDownload = () => {
+  const handleDownload = async () => {
   if (!displayImageUrl) return;
-
-  const ext =
-    displayImageUrl.startsWith('data:image/jpeg') ? 'jpg' :
-    displayImageUrl.startsWith('data:image/webp') ? 'webp' :
-    displayImageUrl.startsWith('data:image/png')  ? 'png'  :
-    'png';
-
-  const isTryOn =
-    displayImageUrl.includes('user-generated-uploads') ||
-    displayImageUrl.includes('garment-uploads');
-
-  const filename = isTryOn ? `fitcheck-look.${ext}` : `fitcheck-model.${ext}`;
-
-  // Navigasyon olmadan indirme
-  downloadFile(displayImageUrl, filename);
+  try {
+    await downloadFile(displayImageUrl, 'fitcheck-look.png');
+  } catch {}
 };
+
 
 
   return (

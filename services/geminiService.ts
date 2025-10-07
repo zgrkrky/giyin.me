@@ -6,10 +6,37 @@
 import { GoogleGenAI, GenerateContentResponse, Modality, SafetySetting, HarmCategory, HarmBlockThreshold } from "@google/genai";
 
 // Backend base URL (Render'da env'den gelir, localde 3001'e düşer)
+// download.ts
 const API_BASE =
   (import.meta as any).env?.VITE_API_URL ||
-  (import.meta as any).env?.VITE_API_BASE_URL || // eski isimle set ettiyseniz yedek
+  (import.meta as any).env?.VITE_API_BASE_URL ||
   'http://localhost:3001';
+
+export async function downloadFile(signedUrl: string, filename = 'fitcheck-look.png') {
+  // signed URL kesinlikle encode edilmeli:
+  const proxied = `${API_BASE}/proxy-download?url=${encodeURIComponent(signedUrl)}&filename=${encodeURIComponent(filename)}`;
+
+  try {
+    const res = await fetch(proxied, { method: 'GET' }); // mode:'cors' default
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+    const blob = await res.blob();
+    const href = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = href;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    URL.revokeObjectURL(href);
+    a.remove();
+  } catch (err) {
+    console.error('downloadFile error:', err);
+    // Son çare: yeni sekme (kullanıcı isterse)
+    // window.open(proxied, '_blank');
+    throw err;
+  }
+}
+
 
 
 const fileToPart = async (file: File) => {

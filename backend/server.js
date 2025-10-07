@@ -30,11 +30,29 @@ const app = express();
 
 
 
-// --- CORS (garanti) ---
-const ALLOWED = (process.env.ALLOWED_ORIGIN || '')
+// CORS
+const allowed = (process.env.ALLOWED_ORIGIN || '')
   .split(',')
   .map(s => s.trim())
   .filter(Boolean);
+
+const corsOptions = {
+  origin: function (origin, cb) {
+    // Render Static “no-origin” prefetch gibi senaryolarda origin gelmeyebilir
+    if (!origin) return cb(null, true);
+    if (!allowed.length) return cb(null, true);
+    if (allowed.includes(origin)) return cb(null, true);
+    cb(new Error('CORS: origin not allowed'));
+  },
+  methods: ['GET','POST','OPTIONS'],
+  allowedHeaders: ['Content-Type'],
+  credentials: false,
+  // 👇 download'ta filename görebilmek için gerekli
+  exposedHeaders: ['Content-Disposition']
+};
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 
 // Tek noktadan tüm yanıtlara başlık ekleyelim
 app.use((req, res, next) => {
@@ -217,21 +235,19 @@ app.post('/upload-generated', async (req, res) => {
 app.get('/proxy-download', async (req, res) => {
   try {
     const url = req.query.url;
-    const filename = req.query.filename || 'image.png';
+    const filename = (req.query.filename || 'image.png').toString();
     if (!url) return res.status(400).send('Missing url');
 
-    // Node 18+ ile global fetch var. Eski Node sürümünde node-fetch ekleyebilirsin.
     const upstream = await fetch(url);
     if (!upstream.ok) {
       return res.status(upstream.status).send(`Upstream error: ${upstream.statusText}`);
     }
 
-    // İçerik tipi ve indirme başlığı
-    const contentType = upstream.headers.get('content-type') || 'application/octet-stream';
-    res.setHeader('Content-Type', contentType);
+    const ct = upstream.headers.get('content-type') || 'application/octet-stream';
+    res.setHeader('Content-Type', ct);
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
 
-    // Stream ederek kullanıcıya aktar
+    // stream
     if (upstream.body && upstream.body.pipe) {
       upstream.body.pipe(res);
     } else {
@@ -243,6 +259,8 @@ app.get('/proxy-download', async (req, res) => {
     res.status(500).send('Proxy failed');
   }
 });
+
+
 
 // Sunucuyu başlatıyoruz
 app.listen(PORT, () => {
