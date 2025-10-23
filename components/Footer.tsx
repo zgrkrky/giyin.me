@@ -6,7 +6,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const REMIX_SUGGESTIONS = [
-  "💭 Geliştirmeler devam ediyor, doğru olmayan sonuçları Özgür'e whatsapp'dan gönder 😌",
+  "💭 Geliştirmeler devam ediyor 😌",
 ];
 
 interface FooterProps {
