@@ -2,7 +2,7 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
 */
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import { RotateCcwIcon, ChevronLeftIcon, ChevronRightIcon, DownloadIcon } from './icons';
 import Spinner from './Spinner';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -22,6 +22,24 @@ interface CanvasProps {
 
 const Canvas: React.FC<CanvasProps> = ({ displayImageUrl, onStartOver, isLoading, loadingMessage, onSelectPose, poseInstructions, currentPoseIndex, availablePoseKeys }) => {
   const [isPoseMenuOpen, setIsPoseMenuOpen] = React.useState(false);
+  const poseMenuRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    // "Dışarı" tıklandığında menüyü kapatan fonksiyon
+    function handleClickOutside(event: MouseEvent | TouchEvent) {
+      if (poseMenuRef.current && !poseMenuRef.current.contains(event.target as Node)) {
+        setIsPoseMenuOpen(false); // Dışarı tıklandı, menüyü kapat
+      }
+    }
+
+    // Olay dinleyicilerini ekle
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside); // Mobil için
+    return () => {
+      // Component kaldırıldığında dinleyicileri temizle
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+    };
+  }, [poseMenuRef, setIsPoseMenuOpen]); // Bağımlılıklar
   
   const handlePreviousPose = () => {
     if (isLoading || availablePoseKeys.length <= 1) return;
@@ -71,24 +89,13 @@ const Canvas: React.FC<CanvasProps> = ({ displayImageUrl, onStartOver, isLoading
     }
   };
   
-  const handleDownload = () => {
+  const handleDownload = async () => {
   if (!displayImageUrl) return;
-
-  const ext =
-    displayImageUrl.startsWith('data:image/jpeg') ? 'jpg' :
-    displayImageUrl.startsWith('data:image/webp') ? 'webp' :
-    displayImageUrl.startsWith('data:image/png')  ? 'png'  :
-    'png';
-
-  const isTryOn =
-    displayImageUrl.includes('user-generated-uploads') ||
-    displayImageUrl.includes('garment-uploads');
-
-  const filename = isTryOn ? `fitcheck-look.${ext}` : `fitcheck-model.${ext}`;
-
-  // Navigasyon olmadan indirme
-  downloadFile(displayImageUrl, filename);
+  try {
+    await downloadFile(displayImageUrl, 'fitcheck-look.png');
+  } catch {}
 };
+
 
 
   return (
@@ -147,10 +154,10 @@ const Canvas: React.FC<CanvasProps> = ({ displayImageUrl, onStartOver, isLoading
 
       {/* Pose Controls */}
       {displayImageUrl && !isLoading && (
-        <div 
+       <div 
+          ref={poseMenuRef} // <-- 1. Ekleme: Ref'i buraya bağladık
           className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-          onMouseEnter={() => setIsPoseMenuOpen(true)}
-          onMouseLeave={() => setIsPoseMenuOpen(false)}
+          // <-- 2. Değişiklik: onMouseEnter ve onMouseLeave sildik
         >
           {/* Pose popover menu */}
           <AnimatePresence>
@@ -166,7 +173,10 @@ const Canvas: React.FC<CanvasProps> = ({ displayImageUrl, onStartOver, isLoading
                           {poseInstructions.map((pose, index) => (
                               <button
                                   key={pose}
-                                  onClick={() => onSelectPose(index)}
+                                  onClick={() => {
+                                    onSelectPose(index);
+                                    setIsPoseMenuOpen(false); // <-- Poz seçilince menüyü kapat
+                                  }}
                                   disabled={isLoading || index === currentPoseIndex}
                                   className="w-full text-left text-sm font-medium text-gray-800 p-2 rounded-md hover:bg-gray-200/70 disabled:opacity-50 disabled:bg-gray-200/70 disabled:font-bold disabled:cursor-not-allowed"
                               >
@@ -178,9 +188,15 @@ const Canvas: React.FC<CanvasProps> = ({ displayImageUrl, onStartOver, isLoading
               )}
           </AnimatePresence>
           
-          <div className="flex items-center justify-center gap-2 bg-white/60 backdrop-blur-md rounded-full p-2 border border-gray-300/50">
+          <div 
+            className="flex items-center justify-center gap-2 bg-white/60 backdrop-blur-md rounded-full p-2 border border-gray-300/50 cursor-pointer"
+            onClick={() => setIsPoseMenuOpen(!isPoseMenuOpen)} // <-- Tıklayınca aç/kapat
+          >
             <button 
-              onClick={handlePreviousPose}
+              onClick={(e) => {
+                e.stopPropagation();
+                handlePreviousPose();
+              }}
               aria-label="Previous pose"
               className="p-2 rounded-full hover:bg-white/80 active:scale-90 transition-all disabled:opacity-50"
               disabled={isLoading}
@@ -191,7 +207,10 @@ const Canvas: React.FC<CanvasProps> = ({ displayImageUrl, onStartOver, isLoading
               {poseInstructions[currentPoseIndex]}
             </span>
             <button 
-              onClick={handleNextPose}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleNextPose();
+              }}
               aria-label="Next pose"
               className="p-2 rounded-full hover:bg-white/80 active:scale-90 transition-all disabled:opacity-50"
               disabled={isLoading}
