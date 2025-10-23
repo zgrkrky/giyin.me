@@ -2,7 +2,11 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
 */
-
+html, 
+body {
+  /* Mobil cihazlarda aşağı çekerek yenilemeyi engelle */
+  overscroll-behavior-y: contain;
+}
 body {
   background-color: #fff; /* Light gray background */
   color: #2a2a2a; /* Dark text color */
